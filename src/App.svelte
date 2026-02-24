@@ -73,8 +73,22 @@
 
   function scrollPage(delta: number) {
     const sec = sectionEls[currentCategory];
-    if (sec) {
-      sec.scrollBy({ top: delta, behavior: 'smooth' });
+    if (!sec) return;
+
+    // スナップ対象の子スライド一覧を取得
+    const slides = Array.from(sec.children) as HTMLElement[];
+    if (slides.length === 0) return;
+
+    const scrollTop = sec.scrollTop;
+
+    if (delta > 0) {
+      // 下へ: 現在位置より下にある最初のスライドへ
+      const next = slides.find(el => el.offsetTop > scrollTop + 1);
+      if (next) sec.scrollTo({ top: next.offsetTop, behavior: 'smooth' });
+    } else {
+      // 上へ: 現在位置より上にある最後のスライドへ
+      const prev = [...slides].reverse().find(el => el.offsetTop < scrollTop - 1);
+      if (prev) sec.scrollTo({ top: prev.offsetTop, behavior: 'smooth' });
     }
   }
 
@@ -86,6 +100,24 @@
         sectionScrollTop = node.scrollTop;
       }
     }, { passive: true });
+
+    // スマートフォン向け: 水平スワイプでカテゴリ切り替え
+    let touchStartX = 0;
+    let touchStartY = 0;
+    node.addEventListener('touchstart', (e) => {
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+    }, { passive: true });
+    node.addEventListener('touchend', (e) => {
+      const dx = e.changedTouches[0].clientX - touchStartX;
+      const dy = e.changedTouches[0].clientY - touchStartY;
+      // 水平方向の移動が垂直より大きく、かつ40px以上の場合のみ反応
+      if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 40) {
+        if (dx < 0) nextCategory();
+        else prevCategory();
+      }
+    }, { passive: true });
+
     return {};
   }
 
@@ -164,7 +196,7 @@
       <!-- デスクトップ用のナビゲーションボタン -->
       <div class="hidden lg:flex flex-col gap-2 absolute bottom-4 right-4 z-50 w-30">
         <div class="text-center">
-          <button on:click={() => scrollPage(-window.innerHeight)} class={`p-2 w-10 h-10 rounded-full text-white transition-colors ${canScrollUp ? 'bg-white/70 cursor-pointer' : 'bg-white/20'}`}>
+          <button on:click={() => scrollPage(-1)} class={`p-2 w-10 h-10 rounded-full text-white transition-colors ${canScrollUp ? 'bg-white/70 cursor-pointer' : 'bg-white/20'}`}>
             ↑
           </button>
         </div>
@@ -177,7 +209,7 @@
           </button>
         </div>
         <div class="text-center">
-          <button on:click={() => scrollPage(window.innerHeight)} class={`p-2 w-10 h-10 rounded-full text-white transition-colors ${canScrollDown ? 'bg-white/70 cursor-pointer' : 'bg-white/20'}`}>
+          <button on:click={() => scrollPage(1)} class={`p-2 w-10 h-10 rounded-full text-white transition-colors ${canScrollDown ? 'bg-white/70 cursor-pointer' : 'bg-white/20'}`}>
             ↓
           </button>
         </div>
