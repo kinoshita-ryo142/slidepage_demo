@@ -200,7 +200,7 @@
         {#each categories as category, i}
           <button
             on:click={() => scrollToCategory(i)}
-            class={`px-4 py-1 rounded-full text-sm font-medium transition-colors cursor-pointer ${
+            class={`px-4 py-1 rounded-full text-sm font-medium transition-colors cursor-pointer whitespace-nowrap ${
               i === currentCategory
                 ? 'bg-white text-black'
                 : 'text-white hover:bg-white/20'
