@@ -142,7 +142,9 @@
       console.log(groups);
 
       groupedData = groups;
-      categories = Object.keys(groups);
+      // フロント共通を除いたカテゴリ一覧をタブとして表示する
+      const COMMON_CATEGORY = 'フロント共通';
+      categories = Object.keys(groups).filter(c => c !== COMMON_CATEGORY);
 
       // 現在のカテゴリインデックスを追跡するため、手動スクロール時にも更新
       if (mainEl) {
@@ -179,6 +181,11 @@
     {#each categories as category, i}
       <section use:registerSection={i} class="h-dvh min-w-full overflow-y-scroll snap-y snap-mandatory hide-scrollbar">
         
+        <!-- フロント共通のスライドを先頭に挿入 -->
+        {#each (groupedData['フロント共通'] ?? []) as post (post.id + '-common-' + category)}
+          <Slide src={post.imagefile.url} />
+        {/each}
+
         {#each groupedData[category] as post (post.id)}
           <Slide src={post.imagefile.url} />
         {/each}
@@ -188,9 +195,20 @@
 
   </main>
 
-      <!-- 現在のカテゴリ表示 (categoriesの変更に連動) -->
-      <div class="absolute top-4 left-4 z-50 rounded-full bg-black/50 px-4 py-1 text-white backdrop-blur-md pointer-events-none">
-        {categories[currentCategory] ?? ''}
+      <!-- カテゴリタブ -->
+      <div class="absolute top-4 left-1/2 -translate-x-1/2 z-50 flex gap-1 rounded-full bg-black/40 p-1 backdrop-blur-md">
+        {#each categories as category, i}
+          <button
+            on:click={() => scrollToCategory(i)}
+            class={`px-4 py-1 rounded-full text-sm font-medium transition-colors cursor-pointer ${
+              i === currentCategory
+                ? 'bg-white text-black'
+                : 'text-white hover:bg-white/20'
+            }`}
+          >
+            {category}
+          </button>
+        {/each}
       </div>
 
       <!-- デスクトップ用のナビゲーションボタン -->
