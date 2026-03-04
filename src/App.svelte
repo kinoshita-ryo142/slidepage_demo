@@ -208,7 +208,7 @@
   <main bind:this={mainEl} class="flex h-dvh w-full overflow-x-scroll snap-x snap-mandatory bg-black hide-scrollbar">
     
     {#each categories as category, i}
-      <section use:registerSection={i} class="h-dvh min-w-full overflow-y-scroll snap-y snap-mandatory hide-scrollbar">
+      <section use:registerSection={i} class="h-dvh min-w-full overflow-y-scroll snap-y snap-mandatory hide-scrollbar pt-14 scroll-pt-14">
         
         <!-- フロント共通のスライドを先頭に挿入 -->
         {#each (groupedData['フロント共通'] ?? []) as post (post.id + '-common-' + category)}
@@ -225,19 +225,21 @@
   </main>
 
       <!-- カテゴリタブ -->
-      <div class="absolute top-4 left-1/2 -translate-x-1/2 z-50 flex gap-1 rounded-full bg-black/40 p-1 backdrop-blur-md">
-        {#each categories as category, i}
-          <button
-            on:click={() => scrollToCategory(i)}
-            class={`px-4 py-1 rounded-full text-sm font-medium transition-colors cursor-pointer whitespace-nowrap ${
-              i === currentCategory
-                ? 'bg-white text-black'
-                : 'text-white hover:bg-white/20'
-            }`}
-          >
-            {category}
-          </button>
-        {/each}
+      <div class="absolute top-0 left-0 w-full h-14 z-50 flex items-center justify-center bg-white shadow-md">
+        <div class=" flex gap-1 rounded-full bg-black/40 p-1 backdrop-blur-md">
+          {#each categories as category, i}
+            <button
+              on:click={() => scrollToCategory(i)}
+              class={`px-4 py-1 rounded-full text-sm font-medium transition-colors cursor-pointer whitespace-nowrap ${
+                i === currentCategory
+                  ? 'bg-white text-black'
+                  : 'text-white hover:bg-white/20'
+              }`}
+            >
+              {category}
+            </button>
+          {/each}
+        </div>
       </div>
 
       <!-- デスクトップ用のナビゲーションボタン -->

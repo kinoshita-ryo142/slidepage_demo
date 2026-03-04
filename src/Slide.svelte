@@ -2,7 +2,7 @@
   export let src: string;
 </script>
 
-<article class="relative flex h-dvh w-full snap-start items-center justify-center overflow-hidden">
+<article class="relative flex h-[calc(100dvh-3.5rem)] w-full snap-start items-center justify-center overflow-hidden">
   
   <div 
     class="absolute inset-0 bg-cover bg-center opacity-30 blur-2xl" 
