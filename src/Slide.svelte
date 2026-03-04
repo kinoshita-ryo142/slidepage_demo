@@ -12,7 +12,7 @@
   <img 
     {src} 
     alt="Content" 
-    class="relative z-10 h-full max-w-full aspect-[9/16] object-cover shadow-2xl"
+    class="relative z-10 h-full max-w-full aspect-9/16 object-cover shadow-2xl"
     loading="lazy" 
   />
   

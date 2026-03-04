@@ -13,17 +13,12 @@
   console.log("microCMS domain", import.meta.env.VITE_MICROCMS_DOMAIN);
   console.log("microCMS baseURL", `https://${import.meta.env.VITE_MICROCMS_DOMAIN}.microcms.io/api/v1`);
   // 取得するエンドポイント名は実際にダッシュボードにあるものに合わせる
-  const ENDPOINT = 'slidepage'; // 例: 'images' や 'posts' など
+  const ENDPOINT = 'slidepage';
 
 
   // 型定義
   // カテゴリはオブジェクトとして返される (e.g. { id, name, ... })
-  type Category = {
-    id?: string;
-    name: string;
-    // 他のフィールドがあっても OK
-    [key: string]: any;
-  };
+  type Category = { id?: string; name: string };
 
   type Post = {
     id: string;
