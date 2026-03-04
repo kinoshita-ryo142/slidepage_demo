@@ -96,20 +96,54 @@
       }
     }, { passive: true });
 
-    // スマートフォン向け: 水平スワイプでカテゴリ切り替え
     let touchStartX = 0;
     let touchStartY = 0;
+    // アニメーション中フラグ: true の間は次のスライド入力を無視する
+    let isAnimating = false;
+
     node.addEventListener('touchstart', (e) => {
       touchStartX = e.touches[0].clientX;
       touchStartY = e.touches[0].clientY;
     }, { passive: true });
+
+    // 垂直スワイプ時のネイティブスクロール慣性を抑制する
+    // (passive: false にしないと preventDefault() が呼べない)
+    node.addEventListener('touchmove', (e) => {
+      const dx = e.touches[0].clientX - touchStartX;
+      const dy = e.touches[0].clientY - touchStartY;
+      if (Math.abs(dy) > Math.abs(dx)) {
+        e.preventDefault();
+      }
+    }, { passive: false });
+
     node.addEventListener('touchend', (e) => {
       const dx = e.changedTouches[0].clientX - touchStartX;
       const dy = e.changedTouches[0].clientY - touchStartY;
-      // 水平方向の移動が垂直より大きく、かつ40px以上の場合のみ反応
+
+      // 水平スワイプ: カテゴリ切り替え (40px 以上)
       if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 40) {
         if (dx < 0) nextCategory();
         else prevCategory();
+        return;
+      }
+
+      // 垂直スワイプ: 1ページのみスライド
+      // アニメーション完了まで追加入力をブロックする
+      if (Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > 30 && !isAnimating) {
+        isAnimating = true;
+        scrollPage(dy < 0 ? 1 : -1);
+
+        // scrollend イベントでスムーススクロール完了を検知
+        const onScrollEnd = () => {
+          isAnimating = false;
+        };
+        node.addEventListener('scrollend', onScrollEnd, { once: true });
+
+        // scrollend が発火しない環境向けのタイムアウトフォールバック
+        setTimeout(() => {
+          isAnimating = false;
+          node.removeEventListener('scrollend', onScrollEnd);
+        }, 700);
       }
     }, { passive: true });
 
