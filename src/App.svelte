@@ -75,15 +75,17 @@
     if (slides.length === 0) return;
 
     const scrollTop = sec.scrollTop;
+    // scroll-padding-top 分を補正（pt-14 = 56px など）
+    const scrollPad = parseFloat(getComputedStyle(sec).scrollPaddingTop) || 0;
 
     if (delta > 0) {
-      // 下へ: 現在位置より下にある最初のスライドへ
-      const next = slides.find(el => el.offsetTop > scrollTop + 1);
-      if (next) sec.scrollTo({ top: next.offsetTop, behavior: 'smooth' });
+      // 下へ: 現在のスナップ位置より下にある最初のスライドへ
+      const next = slides.find(el => el.offsetTop - scrollPad > scrollTop + 1);
+      if (next) sec.scrollTo({ top: next.offsetTop - scrollPad, behavior: 'smooth' });
     } else {
-      // 上へ: 現在位置より上にある最後のスライドへ
-      const prev = [...slides].reverse().find(el => el.offsetTop < scrollTop - 1);
-      if (prev) sec.scrollTo({ top: prev.offsetTop, behavior: 'smooth' });
+      // 上へ: 現在のスナップ位置より上にある最後のスライドへ
+      const prev = [...slides].reverse().find(el => el.offsetTop - scrollPad < scrollTop - 1);
+      if (prev) sec.scrollTo({ top: prev.offsetTop - scrollPad, behavior: 'smooth' });
     }
   }
 
