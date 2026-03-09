@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, tick } from 'svelte';
   import { createClient } from 'microcms-js-sdk';
   import Slide from './Slide.svelte';
 
@@ -52,6 +52,7 @@
       mainEl.scrollTo({ left: sectionEls[index].offsetLeft, behavior: 'smooth' });
       currentCategory = index;
       sectionScrollTop = sectionEls[index].scrollTop;
+      history.replaceState(null, '', '#' + encodeURIComponent(categories[index]));
     }
   }
 
@@ -177,6 +178,10 @@
       const COMMON_CATEGORY = 'フロント共通';
       categories = Object.keys(groups).filter(c => c !== COMMON_CATEGORY);
 
+      // DOM更新を待ってからイベントリスナーとURL処理を行う
+      isLoading = false;
+      await tick();
+
       // 現在のカテゴリインデックスを追跡するため、手動スクロール時にも更新
       if (mainEl) {
         mainEl.addEventListener('scroll', () => {
@@ -184,7 +189,10 @@
           const idx = sectionEls.findIndex(sec =>
             sec && left >= sec.offsetLeft - 1 && left < sec.offsetLeft + sec.offsetWidth - 1
           );
-          if (idx !== -1) currentCategory = idx;
+          if (idx !== -1 && idx !== currentCategory) {
+            currentCategory = idx;
+            history.replaceState(null, '', '#' + encodeURIComponent(categories[idx]));
+          }
         }, { passive: true });
       }
 
@@ -193,6 +201,20 @@
         if (mainEl && sectionEls[currentCategory]) {
           mainEl.scrollTo({ left: sectionEls[currentCategory].offsetLeft, behavior: 'instant' });
         }
+      });
+
+      // URLハッシュに基づいて初期カテゴリへ移動
+      const initialHash = decodeURIComponent(window.location.hash.slice(1));
+      if (initialHash) {
+        const idx = categories.indexOf(initialHash);
+        if (idx > 0) scrollToCategory(idx);
+      }
+
+      // ブラウザの戻る/進む対応
+      window.addEventListener('popstate', () => {
+        const hash = decodeURIComponent(window.location.hash.slice(1));
+        const idx = hash ? categories.indexOf(hash) : 0;
+        if (idx !== -1) scrollToCategory(idx);
       });
     } catch (error) {
       console.error("データの取得に失敗しました:", error);
