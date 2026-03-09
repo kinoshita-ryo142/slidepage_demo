@@ -52,7 +52,7 @@
       mainEl.scrollTo({ left: sectionEls[index].offsetLeft, behavior: 'smooth' });
       currentCategory = index;
       sectionScrollTop = sectionEls[index].scrollTop;
-      history.replaceState(null, '', '#' + encodeURIComponent(categories[index]));
+      history.replaceState(null, '', '#cat' + index);
     }
   }
 
@@ -191,7 +191,7 @@
           );
           if (idx !== -1 && idx !== currentCategory) {
             currentCategory = idx;
-            history.replaceState(null, '', '#' + encodeURIComponent(categories[idx]));
+            history.replaceState(null, '', '#cat' + idx);
           }
         }, { passive: true });
       }
@@ -203,18 +203,18 @@
         }
       });
 
-      // URLハッシュに基づいて初期カテゴリへ移動
-      const initialHash = decodeURIComponent(window.location.hash.slice(1));
-      if (initialHash) {
-        const idx = categories.indexOf(initialHash);
-        if (idx > 0) scrollToCategory(idx);
-      }
+      // URLハッシュに基づいて初期カテゴリへ移動 (#cat0, #cat1, ...)
+      const hashToIndex = (hash: string) => {
+        const m = hash.match(/^cat(\d+)$/);
+        return m ? parseInt(m[1], 10) : -1;
+      };
+      const initialIdx = hashToIndex(window.location.hash.slice(1));
+      if (initialIdx > 0 && initialIdx < categories.length) scrollToCategory(initialIdx);
 
       // ブラウザの戻る/進む対応
       window.addEventListener('popstate', () => {
-        const hash = decodeURIComponent(window.location.hash.slice(1));
-        const idx = hash ? categories.indexOf(hash) : 0;
-        if (idx !== -1) scrollToCategory(idx);
+        const idx = hashToIndex(window.location.hash.slice(1));
+        scrollToCategory(idx !== -1 ? idx : 0);
       });
     } catch (error) {
       console.error("データの取得に失敗しました:", error);
