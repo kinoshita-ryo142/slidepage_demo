@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount, tick } from 'svelte';
+  import { onMount, tick, onDestroy } from 'svelte';
   import { createClient } from 'microcms-js-sdk';
   import Slide from './Slide.svelte';
 
@@ -9,43 +9,37 @@
     apiKey: import.meta.env.VITE_MICROCMS_API_KEY,
   });
 
-  // 起動時に環境変数とベースURLを確認しておくと404原因の切り分けに役立つ
   console.log("microCMS domain", import.meta.env.VITE_MICROCMS_DOMAIN);
   console.log("microCMS baseURL", `https://${import.meta.env.VITE_MICROCMS_DOMAIN}.microcms.io/api/v1`);
-  // 取得するエンドポイント名は実際にダッシュボードにあるものに合わせる
   const ENDPOINT = 'slidepage';
 
-
   // 型定義
-  // カテゴリはオブジェクトとして返される (e.g. { id, name, ... })
   type Category = { id?: string; name: string };
-
   type Post = {
     id: string;
     imagefile: { url: string; width: number; height: number };
-    category?: Category; // 単一オブジェクト、存在しない可能性もある
+    category?: Category;
   };
-
-  // カテゴリごとにグループ化されたデータの型
   type GroupedPosts = Record<string, Post[]>;
 
-  let groupedData: GroupedPosts = {};
-  let categories: string[] = [];
-  let isLoading = true;
+  // Svelte 5 Runes を使用した状態管理
+  let groupedData = $state<GroupedPosts>({});
+  let categories = $state<string[]>([]);
+  let isLoading = $state(true);
 
-  // ナビゲーション用リファレンスと状態
-  let mainEl: HTMLElement;
+  let mainEl = $state<HTMLElement | null>(null);
   const sectionEls: HTMLElement[] = [];
-  let currentCategory = 0;
-  let sectionScrollTop = 0; // 現在のセクションの縦スクロール位置
+  let currentCategory = $state(0);
+  let sectionScrollTop = $state(0);
 
-  // ボタン有効/無効の判定
-  $: canScrollUp = sectionScrollTop > 0;
-  $: canScrollDown = sectionEls[currentCategory]
-    ? sectionScrollTop + sectionEls[currentCategory].clientHeight < sectionEls[currentCategory].scrollHeight - 1
-    : false;
-  $: canPrevCat = currentCategory > 0;
-  $: canNextCat = currentCategory < categories.length - 1;
+  // $derived による効率的なリアクティブ判定
+  const canScrollUp = $derived(sectionScrollTop > 0);
+  const canScrollDown = $derived(() => {
+    const sec = sectionEls[currentCategory];
+    return sec ? sectionScrollTop + sec.clientHeight < sec.scrollHeight - 1 : false;
+  });
+  const canPrevCat = $derived(currentCategory > 0);
+  const canNextCat = $derived(currentCategory < categories.length - 1);
 
   function scrollToCategory(index: number) {
     if (mainEl && sectionEls[index]) {
@@ -70,122 +64,117 @@
   function scrollPage(delta: number) {
     const sec = sectionEls[currentCategory];
     if (!sec) return;
-
-    // スナップ対象の子スライド一覧を取得
     const slides = Array.from(sec.children) as HTMLElement[];
     if (slides.length === 0) return;
 
     const scrollTop = sec.scrollTop;
-    // scroll-padding-top 分を補正（pt-14 = 56px など）
     const scrollPad = parseFloat(getComputedStyle(sec).scrollPaddingTop) || 0;
-
     if (delta > 0) {
-      // 下へ: 現在のスナップ位置より下にある最初のスライドへ
       const next = slides.find(el => el.offsetTop - scrollPad > scrollTop + 1);
       if (next) sec.scrollTo({ top: next.offsetTop - scrollPad, behavior: 'smooth' });
     } else {
-      // 上へ: 現在のスナップ位置より上にある最後のスライドへ
       const prev = [...slides].reverse().find(el => el.offsetTop - scrollPad < scrollTop - 1);
       if (prev) sec.scrollTo({ top: prev.offsetTop - scrollPad, behavior: 'smooth' });
     }
   }
 
-  // セクション要素を配列に登録するアクション
+  // アクション内でのイベント追加と、要素破棄時のクリーンアップ
   function registerSection(node: HTMLElement, index: number) {
     sectionEls[index] = node;
-    node.addEventListener('scroll', () => {
+
+    const handleScroll = () => {
       if (index === currentCategory) {
         sectionScrollTop = node.scrollTop;
       }
-    }, { passive: true });
+    };
 
     let touchStartX = 0;
     let touchStartY = 0;
-    // アニメーション中フラグ: true の間は次のスライド入力を無視する
     let isAnimating = false;
 
-    node.addEventListener('touchstart', (e) => {
+    const handleTouchStart = (e: TouchEvent) => {
       touchStartX = e.touches[0].clientX;
       touchStartY = e.touches[0].clientY;
-    }, { passive: true });
+    };
 
-    // 垂直スワイプ時のネイティブスクロール慣性を抑制する
-    // (passive: false にしないと preventDefault() が呼べない)
-    node.addEventListener('touchmove', (e) => {
+    const handleTouchMove = (e: TouchEvent) => {
       const dx = e.touches[0].clientX - touchStartX;
       const dy = e.touches[0].clientY - touchStartY;
       if (Math.abs(dy) > Math.abs(dx)) {
         e.preventDefault();
       }
-    }, { passive: false });
+    };
 
-    node.addEventListener('touchend', (e) => {
+    const handleTouchEnd = (e: TouchEvent) => {
       const dx = e.changedTouches[0].clientX - touchStartX;
       const dy = e.changedTouches[0].clientY - touchStartY;
 
-      // 水平スワイプ: カテゴリ切り替え (40px 以上)
       if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 40) {
         if (dx < 0) nextCategory();
         else prevCategory();
         return;
       }
 
-      // 垂直スワイプ: 1ページのみスライド
-      // アニメーション完了まで追加入力をブロックする
       if (Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > 30 && !isAnimating) {
         isAnimating = true;
         scrollPage(dy < 0 ? 1 : -1);
 
-        // scrollend イベントでスムーススクロール完了を検知
         const onScrollEnd = () => {
           isAnimating = false;
         };
         node.addEventListener('scrollend', onScrollEnd, { once: true });
 
-        // scrollend が発火しない環境向けのタイムアウトフォールバック
         setTimeout(() => {
           isAnimating = false;
           node.removeEventListener('scrollend', onScrollEnd);
         }, 700);
       }
-    }, { passive: true });
+    };
 
-    return {};
+    node.addEventListener('scroll', handleScroll, { passive: true });
+    node.addEventListener('touchstart', handleTouchStart, { passive: true });
+    node.addEventListener('touchmove', handleTouchMove, { passive: false });
+    node.addEventListener('touchend', handleTouchEnd, { passive: true });
+
+    return {
+      destroy() {
+        node.removeEventListener('scroll', handleScroll);
+        node.removeEventListener('touchstart', handleTouchStart);
+        node.removeEventListener('touchmove', handleTouchMove);
+        node.removeEventListener('touchend', handleTouchEnd);
+      }
+    };
   }
+
+  // クリーンアップ用にイベントハンドラをスコープ外に保持
+  let handleMainScroll: () => void;
+  let handleResize: () => void;
+  let handlePopState: () => void;
 
   onMount(async () => {
     try {
-      // MicroCMSからデータ取得
       const res = await client.getList<Post>({
-        endpoint: ENDPOINT,          // ←正しいエンドポイントをセット
-        queries: { limit: 100 },     // 必要に応じて調整
+        endpoint: ENDPOINT,
+        queries: { limit: 100 },
       });
 
-      // 取得したデータをカテゴリごとにグループ化する
       const groups: GroupedPosts = {};
       res.contents.forEach(post => {
-        // カテゴリはオブジェクトなので name プロパティを利用
         const catName = post.category?.name || 'Others';
-        if (!groups[catName]) {
-          groups[catName] = [];
-        }
+        if (!groups[catName]) groups[catName] = [];
         groups[catName].push(post);
       });
-      console.log(groups);
 
       groupedData = groups;
-      // フロント共通を除いたカテゴリ一覧をタブとして表示する
       const COMMON_CATEGORY = 'フロント共通';
       categories = Object.keys(groups).filter(c => c !== COMMON_CATEGORY);
 
-      // DOM更新を待ってからイベントリスナーとURL処理を行う
       isLoading = false;
       await tick();
 
-      // 現在のカテゴリインデックスを追跡するため、手動スクロール時にも更新
       if (mainEl) {
-        mainEl.addEventListener('scroll', () => {
-          const left = mainEl.scrollLeft;
+        handleMainScroll = () => {
+          const left = mainEl!.scrollLeft;
           const idx = sectionEls.findIndex(sec =>
             sec && left >= sec.offsetLeft - 1 && left < sec.offsetLeft + sec.offsetWidth - 1
           );
@@ -193,34 +182,43 @@
             currentCategory = idx;
             history.replaceState(null, '', '#cat' + idx);
           }
-        }, { passive: true });
+        };
+        mainEl.addEventListener('scroll', handleMainScroll, { passive: true });
       }
 
-      // ウィンドウリサイズ時に現在のカテゴリへ再スナップ
-      window.addEventListener('resize', () => {
+      handleResize = () => {
         if (mainEl && sectionEls[currentCategory]) {
           mainEl.scrollTo({ left: sectionEls[currentCategory].offsetLeft, behavior: 'instant' });
         }
-      });
+      };
+      window.addEventListener('resize', handleResize);
 
-      // URLハッシュに基づいて初期カテゴリへ移動 (#cat0, #cat1, ...)
       const hashToIndex = (hash: string) => {
         const m = hash.match(/^cat(\d+)$/);
         return m ? parseInt(m[1], 10) : -1;
       };
+
       const initialIdx = hashToIndex(window.location.hash.slice(1));
       if (initialIdx > 0 && initialIdx < categories.length) scrollToCategory(initialIdx);
 
-      // ブラウザの戻る/進む対応
-      window.addEventListener('popstate', () => {
+      handlePopState = () => {
         const idx = hashToIndex(window.location.hash.slice(1));
         scrollToCategory(idx !== -1 ? idx : 0);
-      });
+      };
+      window.addEventListener('popstate', handlePopState);
+
     } catch (error) {
       console.error("データの取得に失敗しました:", error);
     } finally {
       isLoading = false;
     }
+  });
+
+  // コンポーネント破棄（アンマウント）時にグローバルイベントを確実に解除
+  onDestroy(() => {
+    if (mainEl && handleMainScroll) mainEl.removeEventListener('scroll', handleMainScroll);
+    if (handleResize) window.removeEventListener('resize', handleResize);
+    if (handlePopState) window.removeEventListener('popstate', handlePopState);
   });
 </script>
 
@@ -230,74 +228,65 @@
   </div>
 {:else}
   <main bind:this={mainEl} class="flex h-dvh w-full overflow-x-scroll snap-x snap-mandatory bg-black hide-scrollbar">
-    
     {#each categories as category, i}
       <section use:registerSection={i} class="h-dvh min-w-full overflow-y-scroll snap-y snap-mandatory hide-scrollbar pt-14 scroll-pt-14">
         
-        <!-- フロント共通のスライドを先頭に挿入 -->
-        {#each (groupedData['フロント共通'] ?? []) as post (post.id + '-common-' + category)}
-          <Slide src={post.imagefile.url} />
+        {#each (groupedData['フロント共通'] ?? []) as post, index (post.id + '-common-' + category)}
+          <Slide src={post.imagefile.url} isFirst={i === 0 && index === 0} />
         {/each}
 
-        {#each groupedData[category] as post (post.id)}
-          <Slide src={post.imagefile.url} />
+        {#each groupedData[category] as post, index (post.id)}
+          <Slide src={post.imagefile.url} isFirst={i === 0 && (groupedData['フロント共通'] ?? []).length === 0 && index === 0} />
         {/each}
         
       </section>
     {/each}
-
   </main>
 
-      <!-- カテゴリタブ -->
-      <div class="absolute top-0 left-0 w-full h-14 z-50 flex items-center justify-center bg-white shadow-md">
-        <div class=" flex gap-1 rounded-full bg-black/40 p-1 backdrop-blur-md">
-          {#each categories as category, i}
-            <button
-              on:click={() => scrollToCategory(i)}
-              class={`px-4 py-1 rounded-full text-sm font-medium transition-colors cursor-pointer whitespace-nowrap ${
-                i === currentCategory
-                  ? 'bg-white text-black'
-                  : 'text-white hover:bg-white/20'
-              }`}
-            >
-              {category}
-            </button>
-          {/each}
-        </div>
-      </div>
+  <div class="absolute top-0 left-0 w-full h-14 z-50 flex items-center justify-center bg-white shadow-md">
+    <div class="flex gap-1 rounded-full bg-black/40 p-1 backdrop-blur-md">
+      {#each categories as category, i}
+        <button
+          onclick={() => scrollToCategory(i)}
+          class={`px-4 py-1 rounded-full text-sm font-medium transition-colors cursor-pointer whitespace-nowrap ${
+            i === currentCategory ? 'bg-white text-black' : 'text-white hover:bg-white/20'
+          }`}
+        >
+          {category}
+        </button>
+      {/each}
+    </div>
+  </div>
 
-      <!-- デスクトップ用のナビゲーションボタン -->
-      <div class="hidden lg:flex flex-col gap-2 absolute bottom-4 right-4 z-50 w-30">
-        <div class="text-center">
-          <button on:click={() => scrollPage(-1)} class={`p-2 w-10 h-10 rounded-full text-white transition-colors ${canScrollUp ? 'bg-white/70 cursor-pointer' : 'bg-white/20'}`}>
-            ↑
-          </button>
-        </div>
-        <div class="flex">
-          <button on:click={prevCategory} class={`p-2 w-10 h-10 rounded-full text-white transition-colors ${canPrevCat ? 'bg-white/70 cursor-pointer' : 'bg-white/20'}`}>
-            ←
-          </button>
-          <button on:click={nextCategory} class={`p-2 w-10 h-10 ml-auto rounded-full text-white transition-colors ${canNextCat ? 'bg-white/70 cursor-pointer' : 'bg-white/20'}`}>
-            →
-          </button>
-        </div>
-        <div class="text-center">
-          <button on:click={() => scrollPage(1)} class={`p-2 w-10 h-10 rounded-full text-white transition-colors ${canScrollDown ? 'bg-white/70 cursor-pointer' : 'bg-white/20'}`}>
-            ↓
-          </button>
-        </div>
-      </div>
+  <div class="hidden lg:flex flex-col gap-2 absolute bottom-4 right-4 z-50 w-30">
+    <div class="text-center">
+      <button onclick={() => scrollPage(-1)} class={`p-2 w-10 h-10 rounded-full text-white transition-colors ${canScrollUp ? 'bg-white/70 cursor-pointer' : 'bg-white/20'}`}>
+        ↑
+      </button>
+    </div>
+    <div class="flex">
+      <button onclick={prevCategory} class={`p-2 w-10 h-10 rounded-full text-white transition-colors ${canPrevCat ? 'bg-white/70 cursor-pointer' : 'bg-white/20'}`}>
+        ←
+      </button>
+      <button onclick={nextCategory} class={`p-2 w-10 h-10 ml-auto rounded-full text-white transition-colors ${canNextCat ? 'bg-white/70 cursor-pointer' : 'bg-white/20'}`}>
+        →
+      </button>
+    </div>
+    <div class="text-center">
+      <button onclick={() => scrollPage(1)} class={`p-2 w-10 h-10 rounded-full text-white transition-colors ${canScrollDown() ? 'bg-white/70 cursor-pointer' : 'bg-white/20'}`}>
+        ↓
+      </button>
+    </div>
+  </div>
 {/if}
 
 <style>
-  /* スクロールバーを非表示にするユーティリティクラス */
   .hide-scrollbar::-webkit-scrollbar {
     display: none;
   }
   .hide-scrollbar {
     -ms-overflow-style: none;
     scrollbar-width: none;
-    /* モバイルブラウザでの余計なスクロール連鎖を防ぐ */
     overscroll-behavior: contain; 
   }
 </style>
