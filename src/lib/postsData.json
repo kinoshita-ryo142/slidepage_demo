@@ -1,0 +1,283 @@
+{
+  "フロント共通": [
+    {
+      "id": "8cdnprsgf",
+      "createdAt": "2026-02-27T08:25:44.716Z",
+      "updatedAt": "2026-03-10T08:28:13.504Z",
+      "publishedAt": "2026-02-27T08:25:44.716Z",
+      "revisedAt": "2026-03-10T08:28:13.504Z",
+      "imagefile": {
+        "url": "/downloaded-images/8cdnprsgf.webp",
+        "height": 1600,
+        "width": 900
+      },
+      "category": {
+        "id": "zp04v-yrz02d",
+        "createdAt": "2026-02-27T08:24:25.136Z",
+        "updatedAt": "2026-02-27T08:24:25.136Z",
+        "publishedAt": "2026-02-27T08:24:25.136Z",
+        "revisedAt": "2026-02-27T08:24:25.136Z",
+        "name": "フロント共通"
+      },
+      "alttext": "フロントページ01"
+    },
+    {
+      "id": "8w_pvfr-3w9",
+      "createdAt": "2026-02-27T08:26:12.112Z",
+      "updatedAt": "2026-03-10T08:28:34.045Z",
+      "publishedAt": "2026-02-27T08:26:12.112Z",
+      "revisedAt": "2026-03-10T08:28:34.045Z",
+      "imagefile": {
+        "url": "/downloaded-images/8w_pvfr-3w9.webp",
+        "height": 1600,
+        "width": 900
+      },
+      "category": {
+        "id": "zp04v-yrz02d",
+        "createdAt": "2026-02-27T08:24:25.136Z",
+        "updatedAt": "2026-02-27T08:24:25.136Z",
+        "publishedAt": "2026-02-27T08:24:25.136Z",
+        "revisedAt": "2026-02-27T08:24:25.136Z",
+        "name": "フロント共通"
+      },
+      "alttext": "フロントページ02"
+    }
+  ],
+  "小学生": [
+    {
+      "id": "64zm9smy-0k",
+      "createdAt": "2026-02-24T06:33:22.565Z",
+      "updatedAt": "2026-03-10T08:33:51.463Z",
+      "publishedAt": "2026-02-24T06:33:22.565Z",
+      "revisedAt": "2026-03-10T08:33:51.463Z",
+      "imagefile": {
+        "url": "/downloaded-images/64zm9smy-0k.webp",
+        "height": 1600,
+        "width": 900
+      },
+      "category": {
+        "id": "yq-9if-g9ei",
+        "createdAt": "2026-02-24T06:10:54.456Z",
+        "updatedAt": "2026-02-27T08:27:53.511Z",
+        "publishedAt": "2026-02-24T06:10:54.456Z",
+        "revisedAt": "2026-02-27T08:27:53.511Z",
+        "name": "小学生"
+      },
+      "alttext": "小学生01"
+    },
+    {
+      "id": "q-c-aarfj88i",
+      "createdAt": "2026-02-24T06:33:50.787Z",
+      "updatedAt": "2026-03-10T08:34:07.397Z",
+      "publishedAt": "2026-02-24T06:33:50.787Z",
+      "revisedAt": "2026-03-10T08:34:07.397Z",
+      "imagefile": {
+        "url": "/downloaded-images/q-c-aarfj88i.webp",
+        "height": 1600,
+        "width": 900
+      },
+      "category": {
+        "id": "yq-9if-g9ei",
+        "createdAt": "2026-02-24T06:10:54.456Z",
+        "updatedAt": "2026-02-27T08:27:53.511Z",
+        "publishedAt": "2026-02-24T06:10:54.456Z",
+        "revisedAt": "2026-02-27T08:27:53.511Z",
+        "name": "小学生"
+      },
+      "alttext": "小学生02"
+    },
+    {
+      "id": "tyq20yfd5xe3",
+      "createdAt": "2026-02-24T06:58:35.941Z",
+      "updatedAt": "2026-03-10T08:34:24.443Z",
+      "publishedAt": "2026-02-24T06:58:35.941Z",
+      "revisedAt": "2026-03-10T08:34:24.443Z",
+      "imagefile": {
+        "url": "/downloaded-images/tyq20yfd5xe3.webp",
+        "height": 1600,
+        "width": 900
+      },
+      "category": {
+        "id": "yq-9if-g9ei",
+        "createdAt": "2026-02-24T06:10:54.456Z",
+        "updatedAt": "2026-02-27T08:27:53.511Z",
+        "publishedAt": "2026-02-24T06:10:54.456Z",
+        "revisedAt": "2026-02-27T08:27:53.511Z",
+        "name": "小学生"
+      },
+      "alttext": "小学生03"
+    },
+    {
+      "id": "afkf43cupvq",
+      "createdAt": "2026-02-27T08:27:44.011Z",
+      "updatedAt": "2026-03-10T08:34:39.433Z",
+      "publishedAt": "2026-02-27T08:27:44.011Z",
+      "revisedAt": "2026-03-10T08:34:39.433Z",
+      "imagefile": {
+        "url": "/downloaded-images/afkf43cupvq.webp",
+        "height": 1600,
+        "width": 900
+      },
+      "category": {
+        "id": "yq-9if-g9ei",
+        "createdAt": "2026-02-24T06:10:54.456Z",
+        "updatedAt": "2026-02-27T08:27:53.511Z",
+        "publishedAt": "2026-02-24T06:10:54.456Z",
+        "revisedAt": "2026-02-27T08:27:53.511Z",
+        "name": "小学生"
+      },
+      "alttext": "小学生04"
+    }
+  ],
+  "中学生": [
+    {
+      "id": "q5bvf4xu65m",
+      "createdAt": "2026-02-24T06:59:31.297Z",
+      "updatedAt": "2026-03-10T08:35:43.237Z",
+      "publishedAt": "2026-02-24T06:59:31.297Z",
+      "revisedAt": "2026-03-10T08:35:43.237Z",
+      "imagefile": {
+        "url": "/downloaded-images/q5bvf4xu65m.webp",
+        "height": 1600,
+        "width": 900
+      },
+      "category": {
+        "id": "38u559cmuiwe",
+        "createdAt": "2026-02-24T06:10:54.451Z",
+        "updatedAt": "2026-02-27T08:28:04.957Z",
+        "publishedAt": "2026-02-24T06:10:54.451Z",
+        "revisedAt": "2026-02-27T08:28:04.957Z",
+        "name": "中学生"
+      },
+      "alttext": "中学生01"
+    },
+    {
+      "id": "2iqugwbca-5",
+      "createdAt": "2026-02-24T06:59:53.699Z",
+      "updatedAt": "2026-03-10T08:35:58.372Z",
+      "publishedAt": "2026-02-24T06:59:53.699Z",
+      "revisedAt": "2026-03-10T08:35:58.372Z",
+      "imagefile": {
+        "url": "/downloaded-images/2iqugwbca-5.webp",
+        "height": 1600,
+        "width": 900
+      },
+      "category": {
+        "id": "38u559cmuiwe",
+        "createdAt": "2026-02-24T06:10:54.451Z",
+        "updatedAt": "2026-02-27T08:28:04.957Z",
+        "publishedAt": "2026-02-24T06:10:54.451Z",
+        "revisedAt": "2026-02-27T08:28:04.957Z",
+        "name": "中学生"
+      },
+      "alttext": "中学生02"
+    },
+    {
+      "id": "8fn_fyv3-kr",
+      "createdAt": "2026-02-24T07:00:23.137Z",
+      "updatedAt": "2026-03-10T08:36:10.996Z",
+      "publishedAt": "2026-02-24T07:00:23.137Z",
+      "revisedAt": "2026-03-10T08:36:10.996Z",
+      "imagefile": {
+        "url": "/downloaded-images/8fn_fyv3-kr.webp",
+        "height": 1600,
+        "width": 900
+      },
+      "category": {
+        "id": "38u559cmuiwe",
+        "createdAt": "2026-02-24T06:10:54.451Z",
+        "updatedAt": "2026-02-27T08:28:04.957Z",
+        "publishedAt": "2026-02-24T06:10:54.451Z",
+        "revisedAt": "2026-02-27T08:28:04.957Z",
+        "name": "中学生"
+      },
+      "alttext": "中学生03"
+    },
+    {
+      "id": "th2ltan0f3-w",
+      "createdAt": "2026-02-27T08:30:04.487Z",
+      "updatedAt": "2026-03-10T08:36:24.114Z",
+      "publishedAt": "2026-02-27T08:30:04.487Z",
+      "revisedAt": "2026-03-10T08:36:24.114Z",
+      "imagefile": {
+        "url": "/downloaded-images/th2ltan0f3-w.webp",
+        "height": 1600,
+        "width": 900
+      },
+      "category": {
+        "id": "38u559cmuiwe",
+        "createdAt": "2026-02-24T06:10:54.451Z",
+        "updatedAt": "2026-02-27T08:28:04.957Z",
+        "publishedAt": "2026-02-24T06:10:54.451Z",
+        "revisedAt": "2026-02-27T08:28:04.957Z",
+        "name": "中学生"
+      },
+      "alttext": "中学生04"
+    }
+  ],
+  "高校生": [
+    {
+      "id": "svdmd-oso",
+      "createdAt": "2026-02-24T07:00:46.790Z",
+      "updatedAt": "2026-03-10T08:37:07.929Z",
+      "publishedAt": "2026-02-24T07:00:46.790Z",
+      "revisedAt": "2026-03-10T08:37:07.929Z",
+      "imagefile": {
+        "url": "/downloaded-images/svdmd-oso.webp",
+        "height": 1600,
+        "width": 900
+      },
+      "category": {
+        "id": "pfqiaxye5gj",
+        "createdAt": "2026-02-24T06:10:54.437Z",
+        "updatedAt": "2026-02-27T08:28:14.095Z",
+        "publishedAt": "2026-02-24T06:10:54.437Z",
+        "revisedAt": "2026-02-27T08:28:14.095Z",
+        "name": "高校生"
+      },
+      "alttext": "高校生01"
+    },
+    {
+      "id": "onxqjtrg27",
+      "createdAt": "2026-02-24T07:01:41.247Z",
+      "updatedAt": "2026-03-10T08:37:21.051Z",
+      "publishedAt": "2026-02-24T07:01:41.247Z",
+      "revisedAt": "2026-03-10T08:37:21.051Z",
+      "imagefile": {
+        "url": "/downloaded-images/onxqjtrg27.webp",
+        "height": 1600,
+        "width": 900
+      },
+      "category": {
+        "id": "pfqiaxye5gj",
+        "createdAt": "2026-02-24T06:10:54.437Z",
+        "updatedAt": "2026-02-27T08:28:14.095Z",
+        "publishedAt": "2026-02-24T06:10:54.437Z",
+        "revisedAt": "2026-02-27T08:28:14.095Z",
+        "name": "高校生"
+      },
+      "alttext": "高校生02"
+    },
+    {
+      "id": "482jsxw0qg",
+      "createdAt": "2026-02-24T07:02:00.967Z",
+      "updatedAt": "2026-03-10T08:37:35.471Z",
+      "publishedAt": "2026-02-24T07:02:00.967Z",
+      "revisedAt": "2026-03-10T08:37:35.471Z",
+      "imagefile": {
+        "url": "/downloaded-images/482jsxw0qg.webp",
+        "height": 1600,
+        "width": 900
+      },
+      "category": {
+        "id": "pfqiaxye5gj",
+        "createdAt": "2026-02-24T06:10:54.437Z",
+        "updatedAt": "2026-02-27T08:28:14.095Z",
+        "publishedAt": "2026-02-24T06:10:54.437Z",
+        "revisedAt": "2026-02-27T08:28:14.095Z",
+        "name": "高校生"
+      },
+      "alttext": "高校生03"
+    }
+  ]
+}

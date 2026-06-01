@@ -12,6 +12,8 @@ dist
 dist-ssr
 *.local
 
+downloaded-images
+
 # Environment variable files
 .env
 .env.local
