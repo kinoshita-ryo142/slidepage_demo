@@ -7,26 +7,36 @@
   // カテゴリ一覧を取得（'フロント共通' を除外するロジックは維持）
   const COMMON_CATEGORY = 'フロント共通';
   const categories = Object.keys(staticGroupedData).filter(c => c !== COMMON_CATEGORY);
+  const backgroundImageUrl = `${import.meta.env.BASE_URL}images/bg_image.webp`;
 
   let mainEl = $state<HTMLElement | null>(null);
   const sectionEls: HTMLElement[] = [];
   let currentCategory = $state(0);
   let sectionScrollTop = $state(0);
+  let scrollMetricsVersion = $state(0);
 
   // 判定ロジック
   const canScrollUp = $derived(sectionScrollTop > 0);
-  const canScrollDown = $derived(() => {
+  const canScrollDown = $derived.by(() => {
+    scrollMetricsVersion;
     const sec = sectionEls[currentCategory];
     return sec ? sectionScrollTop + sec.clientHeight < sec.scrollHeight - 1 : false;
   });
   const canPrevCat = $derived(currentCategory > 0);
   const canNextCat = $derived(currentCategory < categories.length - 1);
 
+  function refreshScrollMetrics(index: number = currentCategory) {
+    const sec = sectionEls[index];
+    if (!sec) return;
+    if (index === currentCategory) sectionScrollTop = sec.scrollTop;
+    scrollMetricsVersion += 1;
+  }
+
   function scrollToCategory(index: number) {
     if (mainEl && sectionEls[index]) {
       mainEl.scrollTo({ left: sectionEls[index].offsetLeft, behavior: 'smooth' });
       currentCategory = index;
-      sectionScrollTop = sectionEls[index].scrollTop;
+      refreshScrollMetrics(index);
       history.replaceState(null, '', '#cat' + index);
     }
   }
@@ -58,7 +68,7 @@
   function registerSection(node: HTMLElement, index: number) {
     sectionEls[index] = node;
     const handleScroll = () => {
-      if (index === currentCategory) sectionScrollTop = node.scrollTop;
+      if (index === currentCategory) refreshScrollMetrics(index);
     };
 
     let touchStartX = 0;
@@ -66,6 +76,7 @@
     let isAnimating = false;
 
     node.addEventListener('scroll', handleScroll, { passive: true });
+    requestAnimationFrame(() => refreshScrollMetrics(index));
     node.addEventListener('touchstart', (e) => {
       touchStartX = e.touches[0].clientX;
       touchStartY = e.touches[0].clientY;
@@ -119,6 +130,7 @@
         );
         if (idx !== -1 && idx !== currentCategory) {
           currentCategory = idx;
+          refreshScrollMetrics(idx);
           history.replaceState(null, '', '#cat' + idx);
         }
       };
@@ -128,6 +140,7 @@
     handleResize = () => {
       if (mainEl && sectionEls[currentCategory]) {
         mainEl.scrollTo({ left: sectionEls[currentCategory].offsetLeft, behavior: 'instant' });
+        refreshScrollMetrics(currentCategory);
       }
     };
     window.addEventListener('resize', handleResize);
@@ -154,15 +167,20 @@
   });
 </script>
 
-<main bind:this={mainEl} class="flex h-dvh w-full overflow-x-scroll snap-x snap-mandatory bg-black hide-scrollbar">
+<div
+  class="pointer-events-none fixed inset-0 bg-cover bg-center opacity-50"
+  style={`background-image: url('${backgroundImageUrl}');`}
+></div>
+
+<main bind:this={mainEl} class="relative z-10 flex h-dvh w-full overflow-x-scroll snap-x snap-mandatory hide-scrollbar">
   {#each categories as category, i}
     <section use:registerSection={i} class="h-dvh min-w-full overflow-y-scroll snap-y snap-mandatory hide-scrollbar pt-14 scroll-pt-14">
       
       {#each (staticGroupedData['フロント共通'] ?? []) as post, index (post.id + '-common-' + category)}
-        <Slide src={post.imagefile.url} isFirst={i === 0 && index === 0} />
+        <Slide src={post.imagefile.url} isFirst={i === 0 && index === 0} on:contentload={() => refreshScrollMetrics(i)} />
       {/each}
       {#each (staticGroupedData[category] ?? []) as post, index (post.id)}
-        <Slide src={post.imagefile.url} isFirst={i === 0 && (staticGroupedData['フロント共通'] ?? []).length === 0 && index === 0} />
+        <Slide src={post.imagefile.url} isFirst={i === 0 && (staticGroupedData['フロント共通'] ?? []).length === 0 && index === 0} on:contentload={() => refreshScrollMetrics(i)} />
       {/each}
       
     </section>
@@ -186,20 +204,20 @@
 
 <div class="hidden lg:flex flex-col gap-2 absolute bottom-4 right-4 z-50 w-30">
   <div class="text-center">
-    <button onclick={() => scrollPage(-1)} class={`p-2 w-10 h-10 rounded-full text-white transition-colors ${canScrollUp ? 'bg-white/70 cursor-pointer' : 'bg-white/20'}`}>
+    <button onclick={() => scrollPage(-1)} class={`p-2 w-10 h-10 rounded-full text-white transition-colors ${canScrollUp ? 'bg-black/70 cursor-pointer' : 'bg-white/20'}`}>
       ↑
     </button>
   </div>
   <div class="flex">
-    <button onclick={prevCategory} class={`p-2 w-10 h-10 rounded-full text-white transition-colors ${canPrevCat ? 'bg-white/70 cursor-pointer' : 'bg-white/20'}`}>
+    <button onclick={prevCategory} class={`p-2 w-10 h-10 rounded-full text-white transition-colors ${canPrevCat ? 'bg-black/70 cursor-pointer' : 'bg-white/20'}`}>
       ←
     </button>
-    <button onclick={nextCategory} class={`p-2 w-10 h-10 ml-auto rounded-full text-white transition-colors ${canNextCat ? 'bg-white/70 cursor-pointer' : 'bg-white/20'}`}>
+    <button onclick={nextCategory} class={`p-2 w-10 h-10 ml-auto rounded-full text-white transition-colors ${canNextCat ? 'bg-black/70 cursor-pointer' : 'bg-white/20'}`}>
       →
     </button>
   </div>
   <div class="text-center">
-    <button onclick={() => scrollPage(1)} class={`p-2 w-10 h-10 rounded-full text-white transition-colors ${canScrollDown() ? 'bg-white/70 cursor-pointer' : 'bg-white/20'}`}>
+    <button onclick={() => scrollPage(1)} class={`p-2 w-10 h-10 rounded-full text-white transition-colors ${canScrollDown ? 'bg-black/70 cursor-pointer' : 'bg-white/20'}`}>
       ↓
     </button>
   </div>

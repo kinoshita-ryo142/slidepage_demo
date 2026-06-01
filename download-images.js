@@ -54,12 +54,12 @@ async function main() {
       await downloadImage(imageUrl, destPath);
       console.log(` -> ダウンロード完了: ${fileName}`);
 
-      // 画像URLをローカルのパス（/downloaded-images/...）に書き換えたデータを作成
+      // 画像URLをローカルのパス（/lp/summer/downloaded-images/...）に書き換えたデータを作成
       localContents.push({
         ...post,
         imagefile: {
           ...post.imagefile,
-          url: `/downloaded-images/${fileName}`, // public内の相対パスに変換
+          url: `/lp/summer/downloaded-images/${fileName}`, // public内の相対パスに変換
         }
       });
     }
