@@ -8,12 +8,26 @@
   const COMMON_CATEGORY = 'フロント共通';
   const categories = Object.keys(staticGroupedData).filter(c => c !== COMMON_CATEGORY);
   const backgroundImageUrl = `${import.meta.env.BASE_URL}images/bg_image.webp`;
+  const logoImageUrl = `${import.meta.env.BASE_URL}images/v-st_logo.png`;
+  const banners = [
+    {
+      imageUrl: `${import.meta.env.BASE_URL}images/banner01.webp`,
+      href: 'https://business.form-mailer.jp/fms/4724c1ed246648'
+    },
+    {
+      imageUrl: `${import.meta.env.BASE_URL}images/banner02.webp`,
+      href: 'tel:0120542210'
+    }
+  ];
 
   let mainEl = $state<HTMLElement | null>(null);
+  let bannerStripEl: HTMLDivElement | null = null;
   const sectionEls: HTMLElement[] = [];
   let currentCategory = $state(0);
   let sectionScrollTop = $state(0);
   let scrollMetricsVersion = $state(0);
+
+  let bannerResizeObserver: ResizeObserver | undefined;
 
   // 判定ロジック
   const canScrollUp = $derived(sectionScrollTop > 0);
@@ -30,6 +44,11 @@
     if (!sec) return;
     if (index === currentCategory) sectionScrollTop = sec.scrollTop;
     scrollMetricsVersion += 1;
+  }
+
+  function syncBottomBannerHeight() {
+    if (!bannerStripEl) return;
+    document.documentElement.style.setProperty('--bottom-banner-height', `${bannerStripEl.offsetHeight}px`);
   }
 
   function scrollToCategory(index: number) {
@@ -142,8 +161,15 @@
         mainEl.scrollTo({ left: sectionEls[currentCategory].offsetLeft, behavior: 'instant' });
         refreshScrollMetrics(currentCategory);
       }
+      syncBottomBannerHeight();
     };
     window.addEventListener('resize', handleResize);
+
+    if (bannerStripEl) {
+      bannerResizeObserver = new ResizeObserver(() => syncBottomBannerHeight());
+      bannerResizeObserver.observe(bannerStripEl);
+      requestAnimationFrame(() => syncBottomBannerHeight());
+    }
 
     const hashToIndex = (hash: string) => {
       const m = hash.match(/^cat(\d+)$/);
@@ -164,6 +190,8 @@
     if (mainEl && handleMainScroll) mainEl.removeEventListener('scroll', handleMainScroll);
     if (handleResize) window.removeEventListener('resize', handleResize);
     if (handlePopState) window.removeEventListener('popstate', handlePopState);
+    bannerResizeObserver?.disconnect();
+    document.documentElement.style.removeProperty('--bottom-banner-height');
   });
 </script>
 
@@ -187,22 +215,26 @@
   {/each}
 </main>
 
-<div class="absolute top-0 left-0 w-full h-14 z-50 flex items-center justify-center bg-white shadow-md">
-  <div class="flex gap-1 rounded-full bg-black/40 p-1 backdrop-blur-md">
-    {#each categories as category, i}
-      <button
-        onclick={() => scrollToCategory(i)}
-        class={`px-4 py-1 rounded-full text-sm font-medium transition-colors cursor-pointer whitespace-nowrap ${
-          i === currentCategory ? 'bg-white text-black' : 'text-white hover:bg-white/20'
-        }`}
-      >
-        {category}
-      </button>
-    {/each}
+<div class="absolute top-0 left-0 z-50 h-14 w-full bg-white shadow-md">
+  <div class="mx-auto flex h-full items-center justify-between gap-3 px-2 sm:px-0" style="width: min(100vw, var(--slide-display-width));">
+    <img src={logoImageUrl} alt="V-sta logo" class="h-5 w-auto shrink-0 sm:h-6" />
+
+    <div class="flex gap-1 rounded-full bg-[#def7e7] p-1 backdrop-blur-md">
+      {#each categories as category, i}
+        <button
+          onclick={() => scrollToCategory(i)}
+          class={`px-3 py-1 rounded-full text-xs font-medium transition-colors cursor-pointer whitespace-nowrap ${
+            i === currentCategory ? 'bg-[#00a63c] text-white' : 'text-black/60 hover:bg-white/20'
+          }`}
+        >
+          {category}
+        </button>
+      {/each}
+    </div>
   </div>
 </div>
 
-<div class="hidden lg:flex flex-col gap-2 absolute bottom-4 right-4 z-50 w-30">
+<div class="hidden lg:flex flex-col gap-2 absolute right-4 z-50 w-30 bottom-[calc(var(--bottom-banner-height)+1rem)]">
   <div class="text-center">
     <button onclick={() => scrollPage(-1)} class={`p-2 w-10 h-10 rounded-full text-white transition-colors ${canScrollUp ? 'bg-black/70 cursor-pointer' : 'bg-white/20'}`}>
       ↑
@@ -223,7 +255,36 @@
   </div>
 </div>
 
+<div class="fixed inset-x-0 bottom-0 z-40 flex justify-center">
+  <div bind:this={bannerStripEl} class="grid grid-cols-2 gap-px bg-neutral-200 shadow-[0_-6px_20px_rgba(0,0,0,0.12)]" style="width: min(100vw, var(--slide-display-width));">
+    {#each banners as banner}
+      {#if banner.href}
+        <a href={banner.href} class="block overflow-hidden bg-white" target="_blank" rel="noreferrer noopener">
+          <img src={banner.imageUrl} alt="Banner" class="block h-auto w-full" loading="lazy" onload={syncBottomBannerHeight} />
+        </a>
+      {:else}
+        <div class="overflow-hidden bg-white">
+          <img src={banner.imageUrl} alt="Banner" class="block h-auto w-full" loading="lazy" onload={syncBottomBannerHeight} />
+        </div>
+      {/if}
+    {/each}
+  </div>
+</div>
+
 <style>
+  :global(:root) {
+    --top-bar-height: 3.5rem;
+    --bottom-banner-height: 4rem;
+    --slide-display-height: calc(100dvh - var(--top-bar-height) - var(--bottom-banner-height));
+    --slide-display-width: calc(var(--slide-display-height) * 9 / 16);
+  }
+
+  @media (min-width: 640px) {
+    :global(:root) {
+      --bottom-banner-height: 4.5rem;
+    }
+  }
+
   .hide-scrollbar::-webkit-scrollbar { display: none; }
   .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; overscroll-behavior: contain; }
 </style>
