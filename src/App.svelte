@@ -342,7 +342,7 @@
 </main>
 
 <div class="absolute top-0 left-0 z-50 h-14 w-full bg-white shadow-md">
-  <div class="mx-auto flex h-full items-center justify-between gap-3 px-2 sm:px-0" style="width: min(100vw, var(--slide-display-width));">
+  <div class="mx-auto flex h-full items-center justify-center gap-3 px-2 sm:px-0" style="width: min(100vw, var(--slide-display-width));">
     <img src={logoImageUrl} alt="V-sta logo" class="h-5 w-auto shrink-0 sm:h-6" />
 
     <div class="flex gap-1 rounded-full bg-[#def7e7] p-1 backdrop-blur-md">
