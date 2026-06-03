@@ -67,47 +67,98 @@
     if (currentCategory > 0) scrollToCategory(currentCategory - 1);
   }
 
-  function scrollPage(delta: number) {
-    const sec = sectionEls[currentCategory];
-    if (!sec) return;
+  function getSlideTarget(sec: HTMLElement, delta: number) {
     const slides = Array.from(sec.children) as HTMLElement[];
-    if (slides.length === 0) return;
+    if (slides.length === 0) return null;
 
     const scrollTop = sec.scrollTop;
     const scrollPad = parseFloat(getComputedStyle(sec).scrollPaddingTop) || 0;
     if (delta > 0) {
       const next = slides.find(el => el.offsetTop - scrollPad > scrollTop + 1);
-      if (next) sec.scrollTo({ top: next.offsetTop - scrollPad, behavior: 'smooth' });
-    } else {
-      const prev = [...slides].reverse().find(el => el.offsetTop - scrollPad < scrollTop - 1);
-      if (prev) sec.scrollTo({ top: prev.offsetTop - scrollPad, behavior: 'smooth' });
+      return next ? next.offsetTop - scrollPad : null;
     }
+
+    const prev = [...slides].reverse().find(el => el.offsetTop - scrollPad < scrollTop - 1);
+    return prev ? prev.offsetTop - scrollPad : null;
+  }
+
+  function scrollPage(delta: number) {
+    const sec = sectionEls[currentCategory];
+    if (!sec) return;
+    const targetTop = getSlideTarget(sec, delta);
+    if (targetTop === null) return;
+    sec.scrollTo({ top: targetTop, behavior: 'smooth' });
   }
 
   function registerSection(node: HTMLElement, index: number) {
     sectionEls[index] = node;
+    let scrollRafId = 0;
     const handleScroll = () => {
-      if (index === currentCategory) refreshScrollMetrics(index);
+      if (scrollRafId !== 0) return;
+      scrollRafId = requestAnimationFrame(() => {
+        scrollRafId = 0;
+        if (index === currentCategory) refreshScrollMetrics(index);
+      });
     };
 
     let touchStartX = 0;
     let touchStartY = 0;
     let isAnimating = false;
+    let animationResetId: number | undefined;
 
-    node.addEventListener('scroll', handleScroll, { passive: true });
-    requestAnimationFrame(() => refreshScrollMetrics(index));
-    node.addEventListener('touchstart', (e) => {
+    const releaseAnimationLock = () => {
+      isAnimating = false;
+      if (animationResetId !== undefined) {
+        window.clearTimeout(animationResetId);
+        animationResetId = undefined;
+      }
+    };
+
+    const lockAnimation = () => {
+      isAnimating = true;
+      if (animationResetId !== undefined) window.clearTimeout(animationResetId);
+      animationResetId = window.setTimeout(() => {
+        animationResetId = undefined;
+        isAnimating = false;
+      }, 450);
+    };
+
+    const handleScrollEnd = () => {
+      releaseAnimationLock();
+    };
+
+    const handleWheel = (event: WheelEvent) => {
+      if (Math.abs(event.deltaY) <= Math.abs(event.deltaX) || Math.abs(event.deltaY) < 4) return;
+
+      const direction = Math.sign(event.deltaY);
+      if (direction === 0) return;
+
+      const targetTop = getSlideTarget(node, direction);
+      if (targetTop === null) {
+        event.preventDefault();
+        releaseAnimationLock();
+        return;
+      }
+
+      event.preventDefault();
+      if (isAnimating) return;
+
+      lockAnimation();
+      node.scrollTo({ top: targetTop, behavior: 'smooth' });
+    };
+
+    const handleTouchStart = (e: TouchEvent) => {
       touchStartX = e.touches[0].clientX;
       touchStartY = e.touches[0].clientY;
-    }, { passive: true });
+    };
 
-    node.addEventListener('touchmove', (e) => {
+    const handleTouchMove = (e: TouchEvent) => {
       const dx = e.touches[0].clientX - touchStartX;
       const dy = e.touches[0].clientY - touchStartY;
       if (Math.abs(dy) > Math.abs(dx)) e.preventDefault();
-    }, { passive: false });
+    };
 
-    node.addEventListener('touchend', (e) => {
+    const handleTouchEnd = (e: TouchEvent) => {
       const dx = e.changedTouches[0].clientX - touchStartX;
       const dy = e.changedTouches[0].clientY - touchStartY;
 
@@ -118,20 +169,35 @@
       }
 
       if (Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > 30 && !isAnimating) {
-        isAnimating = true;
+        lockAnimation();
         scrollPage(dy < 0 ? 1 : -1);
-        const onScrollEnd = () => { isAnimating = false; };
+        const onScrollEnd = () => { releaseAnimationLock(); };
         node.addEventListener('scrollend', onScrollEnd, { once: true });
-        setTimeout(() => {
-          isAnimating = false;
+        window.setTimeout(() => {
+          releaseAnimationLock();
           node.removeEventListener('scrollend', onScrollEnd);
         }, 700);
       }
-    }, { passive: true });
+    };
+
+    node.addEventListener('scroll', handleScroll, { passive: true });
+    node.addEventListener('scrollend', handleScrollEnd);
+    node.addEventListener('wheel', handleWheel, { passive: false });
+    requestAnimationFrame(() => refreshScrollMetrics(index));
+    node.addEventListener('touchstart', handleTouchStart, { passive: true });
+    node.addEventListener('touchmove', handleTouchMove, { passive: false });
+    node.addEventListener('touchend', handleTouchEnd, { passive: true });
 
     return {
       destroy() {
+        if (scrollRafId !== 0) cancelAnimationFrame(scrollRafId);
+        releaseAnimationLock();
         node.removeEventListener('scroll', handleScroll);
+        node.removeEventListener('scrollend', handleScrollEnd);
+        node.removeEventListener('wheel', handleWheel);
+        node.removeEventListener('touchstart', handleTouchStart);
+        node.removeEventListener('touchmove', handleTouchMove);
+        node.removeEventListener('touchend', handleTouchEnd);
       }
     };
   }
