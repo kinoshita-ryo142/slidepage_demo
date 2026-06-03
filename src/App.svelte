@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { onMount, onDestroy } from 'svelte';
   // ビルド時に生成されたローカルJSONデータを直接インポート
   import staticGroupedData from './lib/postsData.json';
   import Slide from './Slide.svelte';
@@ -21,16 +20,18 @@
   ];
 
   let mainEl = $state<HTMLElement | null>(null);
-  let bannerStripEl: HTMLDivElement | null = null;
+  let bannerStripEl = $state<HTMLDivElement | null>(null);
   const sectionEls: HTMLElement[] = [];
   let currentCategory = $state(0);
   let sectionScrollTop = $state(0);
   let scrollMetricsVersion = $state(0);
 
-  let bannerResizeObserver: ResizeObserver | undefined;
-
   // 判定ロジック
-  const canScrollUp = $derived(sectionScrollTop > 0);
+  const canScrollUp = $derived.by(() => {
+    scrollMetricsVersion;
+    const sec = sectionEls[currentCategory];
+    return sec ? getCurrentSlideIndex(sec) > 0 : false;
+  });
   const canScrollDown = $derived.by(() => {
     scrollMetricsVersion;
     const sec = sectionEls[currentCategory];
@@ -82,12 +83,41 @@
     return prev ? prev.offsetTop - scrollPad : null;
   }
 
+  function getCurrentSlideIndex(sec: HTMLElement) {
+    const slides = Array.from(sec.children) as HTMLElement[];
+    if (slides.length === 0) return 0;
+
+    const scrollTop = sec.scrollTop;
+    const scrollPad = parseFloat(getComputedStyle(sec).scrollPaddingTop) || 0;
+    let nearestIndex = 0;
+    let nearestDistance = Number.POSITIVE_INFINITY;
+
+    slides.forEach((slide, index) => {
+      const slideTop = slide.offsetTop - scrollPad;
+      const distance = Math.abs(scrollTop - slideTop);
+      if (distance < nearestDistance) {
+        nearestDistance = distance;
+        nearestIndex = index;
+      }
+    });
+
+    return nearestIndex;
+  }
+
   function scrollPage(delta: number) {
     const sec = sectionEls[currentCategory];
     if (!sec) return;
     const targetTop = getSlideTarget(sec, delta);
     if (targetTop === null) return;
     sec.scrollTo({ top: targetTop, behavior: 'smooth' });
+  }
+
+  // 最初（一番目）のスライドにスクロールで戻る関数
+  function scrollToTop() {
+    const sec = sectionEls[currentCategory];
+    if (sec) {
+      sec.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   }
 
   function registerSection(node: HTMLElement, index: number) {
@@ -105,6 +135,8 @@
     let touchStartY = 0;
     let isAnimating = false;
     let animationResetId: number | undefined;
+    let scrollEndTimeoutId: number | undefined;
+    let activeOnScrollEnd: (() => void) | undefined;
 
     const releaseAnimationLock = () => {
       isAnimating = false;
@@ -171,11 +203,29 @@
       if (Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > 30 && !isAnimating) {
         lockAnimation();
         scrollPage(dy < 0 ? 1 : -1);
-        const onScrollEnd = () => { releaseAnimationLock(); };
-        node.addEventListener('scrollend', onScrollEnd, { once: true });
-        window.setTimeout(() => {
+        
+        if (activeOnScrollEnd) {
+          node.removeEventListener('scrollend', activeOnScrollEnd);
+        }
+
+        const onScrollEnd = () => {
           releaseAnimationLock();
-          node.removeEventListener('scrollend', onScrollEnd);
+          activeOnScrollEnd = undefined;
+        };
+        activeOnScrollEnd = onScrollEnd;
+        node.addEventListener('scrollend', onScrollEnd, { once: true });
+
+        if (scrollEndTimeoutId !== undefined) {
+          window.clearTimeout(scrollEndTimeoutId);
+        }
+
+        scrollEndTimeoutId = window.setTimeout(() => {
+          scrollEndTimeoutId = undefined;
+          releaseAnimationLock();
+          if (activeOnScrollEnd) {
+            node.removeEventListener('scrollend', activeOnScrollEnd);
+            activeOnScrollEnd = undefined;
+          }
         }, 700);
       }
     };
@@ -192,6 +242,14 @@
       destroy() {
         if (scrollRafId !== 0) cancelAnimationFrame(scrollRafId);
         releaseAnimationLock();
+        if (scrollEndTimeoutId !== undefined) {
+          window.clearTimeout(scrollEndTimeoutId);
+          scrollEndTimeoutId = undefined;
+        }
+        if (activeOnScrollEnd) {
+          node.removeEventListener('scrollend', activeOnScrollEnd);
+          activeOnScrollEnd = undefined;
+        }
         node.removeEventListener('scroll', handleScroll);
         node.removeEventListener('scrollend', handleScrollEnd);
         node.removeEventListener('wheel', handleWheel);
@@ -202,14 +260,13 @@
     };
   }
 
-  let handleMainScroll: () => void;
-  let handleResize: () => void;
-  let handlePopState: () => void;
+  $effect(() => {
+    const activeMainEl = mainEl;
+    let handleMainScroll: (() => void) | undefined;
 
-  onMount(() => {
-    if (mainEl) {
+    if (activeMainEl) {
       handleMainScroll = () => {
-        const left = mainEl!.scrollLeft;
+        const left = activeMainEl.scrollLeft;
         const idx = sectionEls.findIndex(sec =>
           sec && left >= sec.offsetLeft - 1 && left < sec.offsetLeft + sec.offsetWidth - 1
         );
@@ -219,21 +276,22 @@
           history.replaceState(null, '', '#cat' + idx);
         }
       };
-      mainEl.addEventListener('scroll', handleMainScroll, { passive: true });
+      activeMainEl.addEventListener('scroll', handleMainScroll, { passive: true });
     }
 
-    handleResize = () => {
-      if (mainEl && sectionEls[currentCategory]) {
-        mainEl.scrollTo({ left: sectionEls[currentCategory].offsetLeft, behavior: 'instant' });
+    const handleResize = () => {
+      if (activeMainEl && sectionEls[currentCategory]) {
+        activeMainEl.scrollTo({ left: sectionEls[currentCategory].offsetLeft, behavior: 'instant' });
         refreshScrollMetrics(currentCategory);
       }
       syncBottomBannerHeight();
     };
     window.addEventListener('resize', handleResize);
 
+    let localBannerResizeObserver: ResizeObserver | undefined;
     if (bannerStripEl) {
-      bannerResizeObserver = new ResizeObserver(() => syncBottomBannerHeight());
-      bannerResizeObserver.observe(bannerStripEl);
+      localBannerResizeObserver = new ResizeObserver(() => syncBottomBannerHeight());
+      localBannerResizeObserver.observe(bannerStripEl);
       requestAnimationFrame(() => syncBottomBannerHeight());
     }
 
@@ -245,19 +303,21 @@
     const initialIdx = hashToIndex(window.location.hash.slice(1));
     if (initialIdx > 0 && initialIdx < categories.length) scrollToCategory(initialIdx);
 
-    handlePopState = () => {
+    const handlePopState = () => {
       const idx = hashToIndex(window.location.hash.slice(1));
       scrollToCategory(idx !== -1 ? idx : 0);
     };
     window.addEventListener('popstate', handlePopState);
-  });
 
-  onDestroy(() => {
-    if (mainEl && handleMainScroll) mainEl.removeEventListener('scroll', handleMainScroll);
-    if (handleResize) window.removeEventListener('resize', handleResize);
-    if (handlePopState) window.removeEventListener('popstate', handlePopState);
-    bannerResizeObserver?.disconnect();
-    document.documentElement.style.removeProperty('--bottom-banner-height');
+    return () => {
+      if (activeMainEl && handleMainScroll) {
+        activeMainEl.removeEventListener('scroll', handleMainScroll);
+      }
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('popstate', handlePopState);
+      localBannerResizeObserver?.disconnect();
+      document.documentElement.style.removeProperty('--bottom-banner-height');
+    };
   });
 </script>
 
@@ -271,10 +331,10 @@
     <section use:registerSection={i} class="box-border h-dvh min-w-full overflow-y-scroll snap-y snap-mandatory hide-scrollbar pt-14 pb-(--bottom-banner-height) scroll-pt-14">
       
       {#each (staticGroupedData['フロント共通'] ?? []) as post, index (post.id + '-common-' + category)}
-        <Slide src={post.imagefile.url} isFirst={i === 0 && index === 0} on:contentload={() => refreshScrollMetrics(i)} />
+        <Slide src={post.imagefile.url} isFirst={i === 0 && index === 0} oncontentload={() => refreshScrollMetrics(i)} />
       {/each}
       {#each (staticGroupedData[category] ?? []) as post, index (post.id)}
-        <Slide src={post.imagefile.url} isFirst={i === 0 && (staticGroupedData['フロント共通'] ?? []).length === 0 && index === 0} on:contentload={() => refreshScrollMetrics(i)} />
+        <Slide src={post.imagefile.url} isFirst={i === 0 && (staticGroupedData['フロント共通'] ?? []).length === 0 && index === 0} oncontentload={() => refreshScrollMetrics(i)} />
       {/each}
       
     </section>
@@ -300,6 +360,43 @@
   </div>
 </div>
 
+<!-- 下向きの「>>」スクロール誘導インジケーター (モバイル・デスクトップ両対応) -->
+<div 
+  class={`absolute left-1/2 -translate-x-1/2 z-30 flex flex-col items-center pointer-events-none transition-all duration-300 ${
+    canScrollDown ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 pointer-events-none'
+  }`}
+  style="bottom: calc(var(--bottom-banner-height) + 0.75rem);"
+>
+  <span class="text-[9px] text-white font-semibold tracking-wider uppercase drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)] select-none">
+    Scroll
+  </span>
+  <div class="flex flex-col items-center justify-center -mt-1 h-6">
+    <!-- 下向きのダブルアロー(シェブロン) SVGアセット -->
+    <svg class="w-6 h-6 text-white drop-shadow-[0_1.5px_3px_rgba(0,0,0,0.8)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M6 8l6 6 6-6" class="animate-chevron-top" />
+      <path d="M6 14l6 6 6-6" class="animate-chevron-bottom" />
+    </svg>
+  </div>
+</div>
+
+<!-- 2枚目以降のスライドで右下に表示される「一番目に戻る▲」ボタン -->
+<div 
+  class={`fixed z-30 transition-all duration-300 left-1/2 -translate-x-1/2 flex justify-end ${
+    canScrollUp ? 'opacity-100 pointer-events-none' : 'opacity-0 pointer-events-none'
+  }`}
+  style="bottom: calc(var(--bottom-banner-height) + 0.75rem); width: min(100vw, var(--slide-display-width));"
+>
+  <div class="pr-2 pointer-events-auto">
+    <button 
+      onclick={scrollToTop}
+      class="flex items-center justify-center w-8 h-8 rounded-full bg-black/70 text-white shadow-lg hover:bg-black/90 active:scale-90 transition-all cursor-pointer border border-white/20"
+      aria-label="一番目のスライドに戻る"
+    >
+      <span class="text-xs -mt-0.5">▲</span>
+    </button>
+  </div>
+</div>
+
 <div class="hidden lg:flex flex-col gap-2 absolute right-4 z-50 w-30 bottom-[calc(var(--bottom-banner-height)+1rem)]">
   <div class="text-center">
     <button onclick={() => scrollPage(-1)} class={`p-2 w-10 h-10 rounded-full text-white transition-colors ${canScrollUp ? 'bg-black/70 cursor-pointer' : 'bg-white/20'}`}>
@@ -322,7 +419,7 @@
 </div>
 
 <div class="fixed inset-x-0 bottom-0 z-40 flex justify-center">
-  <div bind:this={bannerStripEl} class="grid grid-cols-2 gap-px bg-neutral-200 shadow-[0_-6px_20px_rgba(0,0,0,0.12)]" style="width: min(100vw, var(--slide-display-width));">
+  <div bind:this={bannerStripEl} class="grid grid-cols-2 bg-neutral-200 shadow-[0_-6px_20px_rgba(0,0,0,0.12)]" style="width: min(100vw, var(--slide-display-width));">
     {#each banners as banner}
       {#if banner.href}
         <a href={banner.href} class="block overflow-hidden bg-white" target="_blank" rel="noreferrer noopener">
@@ -353,4 +450,27 @@
 
   .hide-scrollbar::-webkit-scrollbar { display: none; }
   .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; overscroll-behavior: contain; }
+
+  /* 高効率なダブルシェブロン（>>）スクロールアニメーション (GPU 処理のみを利用) */
+  @keyframes chevron-bounce {
+    0%, 100% {
+      transform: translateY(0);
+      opacity: 0.3;
+    }
+    50% {
+      transform: translateY(4px);
+      opacity: 1;
+    }
+  }
+
+  .animate-chevron-top {
+    animation: chevron-bounce 1.6s infinite ease-in-out;
+    will-change: transform, opacity;
+  }
+
+  .animate-chevron-bottom {
+    animation: chevron-bounce 1.6s infinite ease-in-out;
+    animation-delay: 0.25s; /* 時間差を作り、上から下へ流れる「>>」を表現 */
+    will-change: transform, opacity;
+  }
 </style>
