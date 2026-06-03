@@ -326,9 +326,9 @@
   style={`background-image: url('${backgroundImageUrl}');`}
 ></div>
 
-<main bind:this={mainEl} class="relative z-10 flex h-dvh w-full overflow-x-scroll snap-x snap-mandatory hide-scrollbar">
+<main bind:this={mainEl} class="relative z-10 flex w-full overflow-x-scroll snap-x snap-mandatory hide-scrollbar" style="height: var(--app-viewport-height);">
   {#each categories as category, i}
-    <section use:registerSection={i} class="box-border h-dvh min-w-full overflow-y-scroll snap-y snap-mandatory hide-scrollbar pt-14 pb-(--bottom-banner-height) scroll-pt-14">
+    <section use:registerSection={i} class="box-border min-w-full overflow-y-scroll snap-y snap-mandatory hide-scrollbar pt-14 pb-(--bottom-banner-height) scroll-pt-14" style="height: var(--app-viewport-height);">
       
       {#each (staticGroupedData['フロント共通'] ?? []) as post, index (post.id + '-common-' + category)}
         <Slide src={post.imagefile.url} isFirst={i === 0 && index === 0} oncontentload={() => refreshScrollMetrics(i)} />
@@ -436,14 +436,17 @@
 
 <style>
   :global(:root) {
+    --app-viewport-height: 100svh;
     --top-bar-height: 3.5rem;
+    --bottom-banner-reserved-height: 4rem;
     --bottom-banner-height: 4rem;
-    --slide-display-height: calc(100dvh - var(--top-bar-height) - var(--bottom-banner-height));
+    --slide-display-height: calc(var(--app-viewport-height) - var(--top-bar-height) - var(--bottom-banner-reserved-height));
     --slide-display-width: calc(var(--slide-display-height) * 9 / 16);
   }
 
   @media (min-width: 640px) {
     :global(:root) {
+      --bottom-banner-reserved-height: 4.5rem;
       --bottom-banner-height: 4.5rem;
     }
   }
