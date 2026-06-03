@@ -202,7 +202,7 @@
 
 <main bind:this={mainEl} class="relative z-10 flex h-dvh w-full overflow-x-scroll snap-x snap-mandatory hide-scrollbar">
   {#each categories as category, i}
-    <section use:registerSection={i} class="h-dvh min-w-full overflow-y-scroll snap-y snap-mandatory hide-scrollbar pt-14 scroll-pt-14">
+    <section use:registerSection={i} class="box-border h-dvh min-w-full overflow-y-scroll snap-y snap-mandatory hide-scrollbar pt-14 pb-(--bottom-banner-height) scroll-pt-14">
       
       {#each (staticGroupedData['フロント共通'] ?? []) as post, index (post.id + '-common-' + category)}
         <Slide src={post.imagefile.url} isFirst={i === 0 && index === 0} on:contentload={() => refreshScrollMetrics(i)} />
